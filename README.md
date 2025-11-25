@@ -10,4 +10,8 @@
    - Individualy set an interest rate on each user based on some global interest rate of the protocol at the time the user desposits into the vault
    - This global interest rate can only decrease to incentivise/reward early adopters.
    - Increases token adoption
-   - ![Global Interest Rate Diagram](ccip-rebase-token/images/GlobalInterestRateDiagram.png)
+   - ![Global Interest Rate Diagram](images/GlobalInterestRateDiagram.png)
+
+
+## Known Issues
+- Owners can set themselves the role of "MINT_AND_BURN_ROLE"
