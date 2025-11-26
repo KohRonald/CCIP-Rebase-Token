@@ -21,9 +21,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     //////////////////////
     // State Variables //
     /////////////////////
-    uint256 private constant PRECISION_FACTOR = 1e18; //This is 1, with 18 decimals precision, so, 1,000,000,000,000,000,000
+    uint256 private constant PRECISION_FACTOR = 1e27; //This is 1, with 27 decimals precision, so, 1,000,000,000,000,000,000,000,000,000
     bytes32 private constant MINT_AND_BURN_ROLE = keccak256("MINT_AND_BURN_ROLE");
-    uint256 private s_interestRate = 5e10; //50000000000
+    uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8;
     mapping(address => uint256) private s_userInterestRate;
     mapping(address => uint256) private s_userLastUpdatedTimestamp;
 
@@ -155,7 +155,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     /**
      * @notice Calculate the interest that has accumulated since the last update
      * @param _user The user to calculate the interest accumulated for
-     * @return The interest that has accumulated since the last update
+     * @return linearInterest The interest that has accumulated since the last update
      */
     function _calculateUserAccumulatedInterestRateSinceLastUpdate(address _user) internal view returns (uint256) {
         // we need to calculate the interest rate that has accumulated since the last update
