@@ -55,6 +55,11 @@ contract Vault {
      * @dev Follows CEI Pattern
      */
     function redeem(uint256 _amount) external {
+        // Redeem everything the msg.sender has if the amount pass through is the maximum value of type uint256
+        if (_amount == type(uint256).max) {
+            _amount = i_rebaseToken.balanceOf(msg.sender);
+        }
+
         // 1. Effects
         i_rebaseToken.burn(msg.sender, _amount);
 

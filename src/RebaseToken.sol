@@ -21,7 +21,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     //////////////////////
     // State Variables //
     /////////////////////
-    uint256 private constant PRECISION_FACTOR = 1e27; //This is 1, with 27 decimals precision, so, 1,000,000,000,000,000,000,000,000,000
+    uint256 private constant PRECISION_FACTOR = 1e18; //This is 1, with 27 decimals precision, so, 1,000,000,000,000,000,000,000,000,000
     bytes32 private constant MINT_AND_BURN_ROLE = keccak256("MINT_AND_BURN_ROLE");
     uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8;
     mapping(address => uint256) private s_userInterestRate;
@@ -46,7 +46,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @dev The interest rate can only decrease
      */
     function setInterestRate(uint256 _newInterestRate) external onlyOwner {
-        if (_newInterestRate > s_interestRate) {
+        if (_newInterestRate >= s_interestRate) {
             revert RebaseToken__InterestRateCanOnlyDecrease(s_interestRate, _newInterestRate);
         }
         s_interestRate = _newInterestRate;
@@ -54,7 +54,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     /**
-     * @notice Get the principle balance of a user. This is the amoutn of tokesn that have currently been minted to the user, not inclduing any interest that has accured since the last tinme the user interacted with the protocol
+     * @notice Get the principle balance of a user. This is the aamount of tokens that have currently been minted to the user, not inclduing any interest that has accured since the last tinme the user interacted with the protocol
      * @param _user The user to get the principle balance for
      * @return The principle balance of the user
      */
@@ -83,10 +83,6 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @dev If check to mitigate against dust, where dust is the accureud interest earn when the burn function is already called and is awaiting finality
      */
     function burn(address _from, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
-        if (_amount == type(uint256).max) {
-            _amount = balanceOf(_from);
-        }
-
         _mintAccruedInterest(_from);
         _burn(_from, _amount);
     }
