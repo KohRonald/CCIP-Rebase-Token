@@ -15,3 +15,6 @@
 
 ## Known Issues
 - Owners can set themselves the role of "MINT_AND_BURN_ROLE"
+
+## Design Flaws
+- A user can initally deposit into to get a more preferred higher interest rate, then some time later, in order not to get a new lower interest rate when depositing more (interest rate will be reduced over time), the user would be able to use a second wallet to send over the deposit, thereby, retaining the higher interest rate 

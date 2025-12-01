@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.24;
 
 /**
  * @title IRebaseToken
@@ -15,7 +15,9 @@ pragma solidity ^0.8.30;
  *      signature, the call will revert.
  */
 interface IRebaseToken {
-    function mint(address _from, uint256 _amount) external;
+    function mint(address _from, uint256 _amount, uint256 _interestRate) external;
     function burn(address _from, uint256 _amount) external;
     function balanceOf(address _user) external view returns (uint256);
+    function getUserInterestRate(address _user) external view returns (uint256);
+    function getGlobalInterestRate() external view returns (uint256);
 }
