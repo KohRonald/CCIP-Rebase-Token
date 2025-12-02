@@ -8,6 +8,8 @@ import {RegistryModuleOwnerCustom} from "@ccip/contracts/src/v0.8/ccip/tokenAdmi
 import {TokenAdminRegistry} from "@ccip/contracts/src/v0.8/ccip/tokenAdminRegistry/TokenAdminRegistry.sol";
 import {TokenPool} from "@ccip/contracts/src/v0.8/ccip/pools/TokenPool.sol";
 import {RateLimiter} from "@ccip/contracts/src/v0.8/ccip/libraries/RateLimiter.sol";
+import {Client} from "@ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
+import {IRouterClient} from "@ccip/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 
 import {RebaseToken} from "src/RebaseToken.sol";
 import {RebaseTokenPool} from "src/RebaseTokenPool.sol";
@@ -16,6 +18,8 @@ import {IRebaseToken} from "src/interfaces/IRebaseToken.sol";
 
 contract CrossChainTest is Test {
     address owner = makeAddr("owner");
+    address user = makeAddr("user");
+
     uint256 seopliaFork;
     uint256 arbSeopliaFork;
 
@@ -157,20 +161,77 @@ contract CrossChainTest is Test {
         TokenPool(localPool).applyChainUpdates(chains);
     }
 
-    /*
-      struct ChainUpdate {
-    uint64 remoteChainSelector; // ──╮ Remote chain selector
-    bool allowed; // ────────────────╯ Whether the chain should be enabled
-    bytes remotePoolAddress; //        Address of the remote pool, ABI encoded in the case of a remote EVM chain.
-    bytes remoteTokenAddress; //       Address of the remote token, ABI encoded in the case of a remote EVM chain.
-    RateLimiter.Config outboundRateLimiterConfig; // Outbound rate limited config, meaning the rate limits for all of the onRamps for the given chain
-    RateLimiter.Config inboundRateLimiterConfig; // Inbound rate limited config, meaning the rate limits for all of the offRamps for the given chain
-    }
+    function bridgeTokens(
+        uint256 amountToBridge,
+        uint256 localFork,
+        uint256 remoteFork,
+        Register.NetworkDetails memory localNetworkDetails,
+        Register.NetworkDetails memory remoteNetworkDetails,
+        RebaseToken localToken,
+        RebaseToken remoteToken
+    ) public {
+        vm.selectFork(localFork);
 
-    struct Config {
-    bool isEnabled; // Indication whether the rate limiting should be enabled
-    uint128 capacity; // ────╮ Specifies the capacity of the rate limiter
-    uint128 rate; //  ───────╯ Specifies the rate of the rate limiter
+        Client.EVMTokenAmount[] memory tokenAmounts = new Client.EVMTokenAmount[](1);
+        tokenAmounts[0] = Client.EVMTokenAmount({token: address(localToken), amount: amountToBridge});
+
+        //1. Create Message
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(user),
+            data: "",
+            tokenAmounts: tokenAmounts,
+            feeToken: localNetworkDetails.linkAddress, //Link Token
+            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: 0})) //No custom gas limit set
+        });
+
+        //2. Get fees in LINK tokens needed to send cross chain message
+        //Cast as IRouterClient interface to call IRouterClient function on this address
+        uint256 fee =
+            IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message);
+
+        //Similar to vm.deal(), gets LINK token to user address
+        ccipLocalSimulatorFork.requestLinkFromFaucet(user, fee);
+
+        //3. Approve the Router to transfer LINK tokens on contract's behalf
+        //Cast as IERC20 interface to call IERC20 functions on this address
+        vm.prank(user);
+        IERC20(localNetworkDetails.linkAddress).approve(localNetworkDetails.routerAddress, fee);
+
+        //3b. Approve the Router to spend tokens on contract's behalf
+        vm.prank(user);
+        IERC20(address(localToken)).approve(localNetworkDetails.routerAddress, amountToBridge);
+
+        uint256 localBalanceBefore = localToken.balanceOf(user);
+
+        //4. Send Tokens cross chain
+        vm.prank(user);
+        IRouterClient(localNetworkDetails.routerAddress).ccipSend(remoteNetworkDetails.chainSelector, message);
+
+        uint256 localBalanceAfter = localToken.balanceOf(user);
+
+        assertEq(localBalanceAfter - localBalanceBefore, amountToBridge); //assert that the bridge amount has sucessfully been sent
+        uint256 localUserInterestRate = localToken.getUserInterestRate(user);
+
+        //Here checks if message is propogated on other chain
+        vm.selectFork(remoteFork);
+        vm.warp(block.timestamp + 20 minutes); //Warp as it might take a little bit of time for message to bridge cross chain
+        uint256 remoteBalanceBefore = remoteToken.balanceOf(user);
+        ccipLocalSimulatorFork.switchChainAndRouteMessage(remoteFork); //Switches chain and route the message sent from source chain
+        uint256 remoteBalanceAfter = remoteToken.balanceOf(user);
+        assertEq(remoteBalanceAfter, remoteBalanceBefore + amountToBridge); //assert that the bridge amount has sucessfully been received
+
+        uint256 remotelUserInterestRate = remoteToken.getUserInterestRate(user);
+        assertEq(localUserInterestRate, remotelUserInterestRate); //assert that the address receiving tokens has inherited the destination address's interest rate
     }
-    */
 }
+
+/**
+ *
+ *  struct EVM2AnyMessage {
+ *     bytes receiver; // abi.encode(receiver address) for dest EVM chains
+ *     bytes data; // Data payload
+ *     EVMTokenAmount[] tokenAmounts; // Token transfers
+ *     address feeToken; // Address of feeToken. address(0) means you will send msg.value.
+ *     bytes extraArgs; // Populate this with _argsToBytes(EVMExtraArgsV2)
+ *   }
+ */
