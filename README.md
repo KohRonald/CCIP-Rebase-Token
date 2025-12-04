@@ -12,6 +12,18 @@
    - Increases token adoption
    - ![Global Interest Rate Diagram](images/GlobalInterestRateDiagram.png)
 
+## Contracts
+1. Token Contract
+   - The core ERC-20 token with rebase (elastic supply) logic
+   - Automatically adjusts token balances over time to reflect interest accrual
+
+2. Pool Contract
+   - Manages liquidity and cross-chain transfers
+   - An intermediary to safely "lock/burn" tokens on the source chain and "release/mint" on the destination chain
+
+3. Vault Contract
+   - Acts as the collateral manager or "entry/exit gate" for the protocol
+   - Collateral vault for ETH deposits/withdrawals
 
 ## Known Issues
 - Owners can set themselves the role of "MINT_AND_BURN_ROLE"
