@@ -201,16 +201,22 @@ contract CrossChainTest is Test {
 
         //2. Get fees in LINK tokens needed to send cross chain message
         //Cast as IRouterClient interface to call IRouterClient function on this address
-        uint256 fee =
-            IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message);
+        //Commented line below to prevent the need to build with --via-ir
+        // uint256 fee =
+        //     IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message);
 
         //Similar to vm.deal(), gets LINK token to user address
-        ccipLocalSimulatorFork.requestLinkFromFaucet(user, fee);
+        ccipLocalSimulatorFork.requestLinkFromFaucet(
+            user, IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message)
+        );
 
         //3. Approve the Router to transfer LINK tokens on contract's behalf
         //Cast as IERC20 interface to call IERC20 functions on this address
         vm.prank(user);
-        IERC20(localNetworkDetails.linkAddress).approve(localNetworkDetails.routerAddress, fee);
+        IERC20(localNetworkDetails.linkAddress).approve(
+            localNetworkDetails.routerAddress,
+            IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message)
+        );
 
         //3b. Approve the Router to spend local tokens on contract's behalf (the amount to bridge)
         vm.prank(user);

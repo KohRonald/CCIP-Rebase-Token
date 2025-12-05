@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.24;
 
 import {Test, console2} from "../lib/forge-std/src/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -138,7 +138,7 @@ contract RebaseTokenTest is Test {
 
     /*
     * In here, expectPartialRevert is used over expectRevert. We are telling foundry to check that the selector
-    * matches and ignore the rest of the encoded arugments, which are causing failure due to "Error != expected error" 
+    * matches and ignore the rest of the encoded arugments, which are causing failure due to "Error != expected error"
     */
     function testCannotSetInterestRateIfNotOwner(uint256 newInterestRate) public {
         vm.prank(user);
