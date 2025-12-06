@@ -25,6 +25,10 @@
    - Acts as the collateral manager or "entry/exit gate" for the protocol
    - Collateral vault for ETH deposits/withdrawals
 
+4. Deployment Script
+   - Deployment script for creating Rebase Token and Pool contracts on Sepolia Eth and ZKSync Sepolia. 
+   - Deployment script for creating Vault contract on Sepolia Eth.
+
 ## Known Issues
 - Owners can set themselves the role of "MINT_AND_BURN_ROLE"
 
